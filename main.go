@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"os"
 	"os/exec"
@@ -14,14 +15,13 @@ import (
 	"strings"
 	"syscall"
 	"time"
+
+	"github.com/joho/godotenv"
 )
 
 var (
-	checkInterval     = 600 * time.Second
-	restartWaitTime   = 30 * time.Second
-	discordWebhookURL = os.Getenv("DISCORD_WEBHOOK_URL")
-	logDirectory      = "/var/log/kuzco/"
-	logFilePath       = filepath.Join(logDirectory, "log.txt")
+	logDirectory = "/var/log/kuzco/"
+	logFilePath  = filepath.Join(logDirectory, "log.txt")
 )
 
 type discordMessage struct {
@@ -43,6 +43,8 @@ func newDiscordMessage(warning string, critical string) *discordMessage {
 }
 
 func (d *discordMessage) Send() {
+	discordWebhookURL := os.Getenv("DISCORD_WEBHOOK_URL")
+
 	hostname, err := os.Hostname()
 	if err != nil {
 		fmt.Println("Error getting hostname:", err)
@@ -110,6 +112,29 @@ func exitHandler() {
 }
 
 func main() {
+	err := godotenv.Load()
+	if err != nil {
+		log.Println("Error loading .env file")
+	}
+
+	checkIntervalStr := os.Getenv("CHECK_INTERVAL")
+	if checkIntervalStr == "" {
+		log.Fatal("CHECK_INTERVAL environment variable is not set")
+	}
+	checkInterval, err := time.ParseDuration(checkIntervalStr)
+	if err != nil {
+		log.Fatalf("Error converting CHECK_INTERVAL to integer: %v", err)
+	}
+
+	restartWaitTimeStr := os.Getenv("RESTART_WAIT_TIME")
+	if restartWaitTimeStr == "" {
+		log.Fatal("RESTART_WAIT_TIME environment variable is not set")
+	}
+	restartWaitTime, err := time.ParseDuration(restartWaitTimeStr)
+	if err != nil {
+		log.Fatalf("Error converting RESTART_WAIT_TIME to duration: %v", err)
+	}
+
 	discordMessage := newDiscordMessage(
 		"warning: kuzco node fails and performs a restart procedure",
 		"critical: kuzco node has restarted more than 3 times, please check.",
@@ -132,7 +157,7 @@ func main() {
 		initialFinishCount := countFinish(logFilePath)
 		fmt.Println("Initial number of 'finish'", initialFinishCount)
 
-		time.Sleep(checkInterval)
+		time.Sleep(checkInterval * time.Second)
 
 		finalFinishCount := countFinish(logFilePath)
 		fmt.Println("Currently number of 'finish'", finalFinishCount)
@@ -142,7 +167,7 @@ func main() {
 		} else {
 			fmt.Println("kuzco anomaly detected, attempting to reboot in progress...")
 			exec.Command("pkill", "-9", "kuzco").Run()
-			time.Sleep(restartWaitTime)
+			time.Sleep(restartWaitTime * time.Second)
 			startKuzco()
 			discordMessage.Send()
 		}
