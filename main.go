@@ -10,6 +10,7 @@ import (
 	"os/exec"
 	"os/signal"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"syscall"
 	"time"
@@ -18,7 +19,7 @@ import (
 var (
 	checkInterval     = 600 * time.Second
 	restartWaitTime   = 30 * time.Second
-	discordWebhookURL = "https://discord.com/api/webhooks/"
+	discordWebhookURL = os.Getenv("DISCORD_WEBHOOK_URL")
 	logDirectory      = "/var/log/kuzco/"
 	logFilePath       = filepath.Join(logDirectory, "log.txt")
 )
@@ -53,7 +54,7 @@ func (d *discordMessage) Send() {
 		d.criticalCount = 0
 	} else {
 		d.criticalCount++
-		message = fmt.Sprintf("hostname：%s - %s", hostname, d.warning)
+		message = fmt.Sprintf("hostname：%s - %s [%s]", hostname, d.warning, strconv.Itoa(d.criticalCount))
 	}
 
 	payload := DiscordWebhookPayload{
@@ -109,7 +110,10 @@ func exitHandler() {
 }
 
 func main() {
-	discordMessage := newDiscordMessage("test", "test")
+	discordMessage := newDiscordMessage(
+		"warning: kuzco node fails and performs a restart procedure",
+		"critical: kuzco node has restarted more than 3 times, please check.",
+	)
 
 	if _, err := os.Stat(logDirectory); os.IsNotExist(err) {
 		os.MkdirAll(logDirectory, 0755)
