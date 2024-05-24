@@ -167,7 +167,6 @@ func main() {
 		} else {
 			fmt.Println("kuzco anomaly detected, attempting to reboot in progress...")
 			exec.Command("pkill", "-9", "kuzco").Run()
-			exec.Command("pkill", "-9", "runner").Run()
 			exec.Command("pkill", "-9", "ollama").Run()
 			time.Sleep(restartWaitTime * time.Second)
 			startKuzco()
