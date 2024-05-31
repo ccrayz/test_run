@@ -121,10 +121,7 @@ func main() {
 	if checkIntervalStr == "" {
 		log.Fatal("CHECK_INTERVAL environment variable is not set")
 	}
-	checkInterval, err := time.ParseDuration(checkIntervalStr)
-	if err != nil {
-		log.Fatalf("Error converting CHECK_INTERVAL to integer: %v", err)
-	}
+	checkInterval, _ := strconv.Atoi(checkIntervalStr)
 
 	restartWaitTimeStr := os.Getenv("RESTART_WAIT_TIME")
 	if restartWaitTimeStr == "" {
@@ -155,17 +152,17 @@ func main() {
 
 	for {
 		initialFinishCount := countFinish(logFilePath)
-		fmt.Println("Initial number of 'finish'", initialFinishCount)
+		log.Println("Initial number of 'finish'", initialFinishCount)
 
-		time.Sleep(checkInterval * time.Second)
+		time.Sleep(time.Duration(checkInterval) * time.Second)
 
 		finalFinishCount := countFinish(logFilePath)
-		fmt.Println("Currently number of 'finish'", finalFinishCount)
+		log.Println("Currently number of 'finish'", finalFinishCount)
 
 		if finalFinishCount > initialFinishCount {
-			fmt.Println("kuzco is healty!")
+			log.Println("kuzco is healty!")
 		} else {
-			fmt.Println("kuzco anomaly detected, attempting to reboot in progress...")
+			log.Println("kuzco anomaly detected, attempting to reboot in progress...")
 			exec.Command("pkill", "-9", "kuzco").Run()
 			exec.Command("pkill", "-9", "ollama").Run()
 			time.Sleep(restartWaitTime * time.Second)
