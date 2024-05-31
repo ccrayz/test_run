@@ -141,14 +141,14 @@ func main() {
 		os.MkdirAll(logDirectory, 0755)
 	}
 
-	startKuzco()
-
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
 	go func() {
 		<-sigChan
 		exitHandler()
 	}()
+
+	startKuzco()
 
 	for {
 		initialFinishCount := countFinish(logFilePath)
