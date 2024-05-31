@@ -101,7 +101,7 @@ func clearLog(filePath string) {
 func startKuzco() {
 	fmt.Println("Starting Kuzco...")
 	exec.Command("sh", "-c", fmt.Sprintf("kuzco worker start > %s 2>&1 &", logFilePath)).Run()
-	time.Sleep(6 * time.Second)
+	time.Sleep(30 * time.Second)
 }
 
 func exitHandler() {
